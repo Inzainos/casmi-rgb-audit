@@ -1,0 +1,11 @@
+[     0.0s | RSSmax      51 MB] preparar RGB: K por canal=20,000, python 3.14.7, numpy 2.4.6
+[     5.3s | RSSmax     984 MB] val_lib: 2,285,808 filas, 117,531,907 nnz, 261,536 moléculas
+[     5.6s | RSSmax    1040 MB] 1 espectro/molécula: 261,536 filas (nnz medio 85.7)
+[     5.6s | RSSmax    1040 MB] verificación 1 OK: train_mol idéntico a train_mol_paso2.npy
+[     6.9s | RSSmax    1194 MB] verificación 2 OK: 20,000 bins son subconjunto de los 50k de 05 (df mínimo incluido 81)
+[     7.1s | RSSmax    1194 MB] Xb: 261,536 x 20,000, nnz 20,581,888
+[     8.2s | RSSmax    1194 MB] canal sqrt: nnz 20,581,888, media por fila 78.7
+[     9.4s | RSSmax    1194 MB] canal log: nnz 20,581,888, media por fila 78.7
+[    10.1s | RSSmax    1194 MB] canal bin: nnz 20,581,888, media por fila 78.7
+[    13.8s | RSSmax    1670 MB] X_train_rgb: 261,536 x 60,000, nnz 61,745,664
+[    34.7s | RSSmax    1670 MB] FIN preparar RGB: {'k_por_canal': 20000, 'n_cols_total': 60000, 'n_train': 261536, 'nnz_total': 61745664, 'nnz_por_canal': {'sqrt': 20581888, 'log': 20581888, 'bin': 20581888}, 'df_min_incluido': 81, 'verif_train_mol_identico_05': True, 'verif_bins_subconjunto_50k': True, 'python': '3.14.7', 'numpy': '2.4.6'}

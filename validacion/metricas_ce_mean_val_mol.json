@@ -1,0 +1,17 @@
+{
+  "tag": "ce_mean",
+  "split": "val_mol",
+  "bin": true,
+  "tol_ppm": 10.0,
+  "tol_min": 0.002,
+  "n": 13748,
+  "cand_mediana": 106.0,
+  "cand_media": 141.03142275240035,
+  "mrr25": 0.3726099797698344,
+  "top1": 0.25494617398894387,
+  "top5": 0.5113471050334594,
+  "recall25": 0.7633110270584812,
+  "rank_mediana_presentes": 3.0,
+  "tanimoto_cont_media": 0.23401549458503723,
+  "tanimoto_cont_mediana": 0.22499999403953552
+}

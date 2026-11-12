@@ -1,0 +1,17 @@
+{
+  "tag": "lineal_ref",
+  "split": "val_mol",
+  "bin": true,
+  "tol_ppm": 10.0,
+  "tol_min": 0.002,
+  "n": 13748,
+  "cand_mediana": 106.0,
+  "cand_media": 141.03142275240035,
+  "mrr25": 0.4146248891849971,
+  "top1": 0.2910241489671225,
+  "top5": 0.5644457375618271,
+  "recall25": 0.8010619726505673,
+  "rank_mediana_presentes": 2.0,
+  "tanimoto_cont_media": 0.2420807033777237,
+  "tanimoto_cont_mediana": 0.23275862634181976
+}

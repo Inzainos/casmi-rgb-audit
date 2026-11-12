@@ -1,0 +1,17 @@
+{
+  "tag": "rgb20k_bin",
+  "split": "val_mol",
+  "bin": true,
+  "tol_ppm": 10.0,
+  "tol_min": 0.002,
+  "n": 13748,
+  "cand_mediana": 106.0,
+  "cand_media": 141.03142275240035,
+  "mrr25": 0.4951004215516131,
+  "top1": 0.3713267384346814,
+  "top5": 0.6458393948210649,
+  "recall25": 0.8505964503927844,
+  "rank_mediana_presentes": 2.0,
+  "tanimoto_cont_media": 0.25466886162757874,
+  "tanimoto_cont_mediana": 0.24561403691768646
+}

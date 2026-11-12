@@ -1,0 +1,7 @@
+[     0.3s | RSSmax     147 MB] evaluar pred rgb20k_recrea (crudo) val_mol: 13,748 moléculas, P (13748, 2048) (memmap)
+[     1.8s | RSSmax     194 MB]   rgb20k_recrea val_mol: 4,000/13,748 (2s, cand mediana 106)
+[     3.3s | RSSmax     226 MB]   rgb20k_recrea val_mol: 8,000/13,748 (3s, cand mediana 106)
+[     4.8s | RSSmax     258 MB]   rgb20k_recrea val_mol: 12,000/13,748 (5s, cand mediana 106)
+[     5.4s | RSSmax     272 MB] retrieval completo: 13,748 consultas en 5s, candidatos/mol mediana 106 media 141.0
+[     5.4s | RSSmax     272 MB]   rgb20k_recrea (crudo): MRR@25 0.4542 Top-1 0.3267 Top-5 0.6082 Recall@25 0.8301 Tanimoto 0.2850
+[     5.4s | RSSmax     272 MB] FIN evaluar pred rgb20k_recrea

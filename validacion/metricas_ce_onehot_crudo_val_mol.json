@@ -1,0 +1,17 @@
+{
+  "tag": "ce_onehot_crudo",
+  "split": "val_mol",
+  "bin": false,
+  "tol_ppm": 10.0,
+  "tol_min": 0.002,
+  "n": 13748,
+  "cand_mediana": 106.0,
+  "cand_media": 141.03142275240035,
+  "mrr25": 0.3250037231072414,
+  "top1": 0.2116671515856852,
+  "top5": 0.454320628455048,
+  "recall25": 0.7228687809135874,
+  "rank_mediana_presentes": 3.0,
+  "tanimoto_cont_media": 0.2887263596057892,
+  "tanimoto_cont_mediana": 0.28179848194122314
+}

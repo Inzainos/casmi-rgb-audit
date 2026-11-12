@@ -1,0 +1,17 @@
+{
+  "tag": "ce_mean_crudo",
+  "split": "val_mol",
+  "bin": false,
+  "tol_ppm": 10.0,
+  "tol_min": 0.002,
+  "n": 13748,
+  "cand_mediana": 106.0,
+  "cand_media": 141.03142275240035,
+  "mrr25": 0.333109225692337,
+  "top1": 0.21654058772185045,
+  "top5": 0.46894093686354377,
+  "recall25": 0.7300698283386674,
+  "rank_mediana_presentes": 3.0,
+  "tanimoto_cont_media": 0.2830873727798462,
+  "tanimoto_cont_mediana": 0.2774626910686493
+}
