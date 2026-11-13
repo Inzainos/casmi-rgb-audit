@@ -89,6 +89,9 @@ Las predicciones SMILES resultantes se puntúan con `30_evaluar_generativo.py`
 y la verdad del mismo split. Esto produce MRR@25, validez, unicidad y
 Tanimoto de la cadena completa RGB→SMILES; no debe compararse con el
 `MRR_novel` hasta pasarle también el conjunto train correcto al evaluador.
+El evaluador ahora acepta ese train mediante `--train-ik14` (claves
+tautomerizadas) y reporta `mrr25_novel`, calculado solo en consultas cuya
+verdad no aparece en las moléculas usadas para entrenar el decodificador.
 
 **Prueba de integración pendiente:** los dos ZIP recibidos no contienen
 `W_lineal_rgb20k.npy`, los espectros bineados, las predicciones

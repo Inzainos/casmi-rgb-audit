@@ -165,6 +165,7 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
     gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
     stats = {"total_candidatos": 0, "ok": 0, "duplicados": 0, "vacios": 0}
     ranks = []
+    ranks_novel = []
     filas_menos_25 = 0
     validez_por_fila = []
     unicidad_por_fila = []
@@ -172,6 +173,8 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
     tanimoto_top1 = []
     tanimoto_mejor25 = []
     n_sin_verdad = 0
+    n_verdades_en_train = 0
+    n_verdades_sin_canonicalizar = 0
     for row in pred_rows:
         mid = row["molecule_id"]
         if mid not in verdad:
@@ -184,6 +187,21 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
         rango, procesada, smiles_validos, n_validos, n_distintos = procesar_lista(
             cands, v["inchikey14"], chem, tautomer_enumerator, stats)
         ranks.append(rango)
+        if train_ik14 is not None:
+            if v.get("smiles"):
+                ik_verdad, fallo = canonical_ik14(
+                    v["smiles"], chem, tautomer_enumerator)
+                if fallo:
+                    n_verdades_sin_canonicalizar += 1
+                elif ik_verdad in train_ik14:
+                    n_verdades_en_train += 1
+                else:
+                    ranks_novel.append(next(
+                        (i + 1 for i, ik in enumerate(procesada)
+                         if ik == ik_verdad), 0
+                    ))
+            else:
+                n_verdades_sin_canonicalizar += 1
         validez_por_fila.append(n_validos / max(len(cands), 1))
         unicidad_por_fila.append(n_distintos / max(n_validos, 1) if n_validos else 1.0)
         if train_ik14 is not None and n_distintos:
@@ -232,6 +250,30 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
         "novedad_n": int(len(novedad_por_fila)),
         "fallos_candidatos": stats,
     })
+    if train_ik14 is not None:
+        met_novel = mrr_from_ranks(ranks_novel)
+        rn = np.asarray(ranks_novel, dtype=np.float64)
+        rr_novel = np.where(
+            rn > 0, 1.0 / np.where(rn > 0, rn, 1.0), 0.0
+        )
+        if len(rr_novel) and n_bootstrap > 0:
+            rng_novel = np.random.default_rng(semilla + 1)
+            boots_novel = rng_novel.choice(
+                rr_novel, size=(n_bootstrap, len(rr_novel)), replace=True
+            ).mean(axis=1)
+            ic_novel = [
+                float(np.percentile(boots_novel, 2.5)),
+                float(np.percentile(boots_novel, 97.5)),
+            ]
+        else:
+            ic_novel = [None, None]
+        out["mrr25_novel"] = {
+            **met_novel,
+            "ic95_bootstrap": ic_novel,
+            "bootstrap_n": int(n_bootstrap),
+            "n_verdades_en_train": n_verdades_en_train,
+            "n_verdades_sin_canonicalizar": n_verdades_sin_canonicalizar,
+        }
     if tanimoto_top1:
         t1 = np.asarray(tanimoto_top1)
         bm = np.asarray(tanimoto_mejor25)
@@ -356,7 +398,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--predicciones", default="")
     ap.add_argument("--verdad", default="")
-    ap.add_argument("--train-ik14", default="")
+    ap.add_argument("--train-ik14", default="",
+                    help="archivo de InChIKey14 tautomerizados del train")
     ap.add_argument("--datos", type=Path, default=None,
                     help="raíz del paquete de datos; requerido para --autotest")
     ap.add_argument("--salida", default="")
