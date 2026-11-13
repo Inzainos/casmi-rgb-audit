@@ -1,0 +1,138 @@
+{
+  "n_train": 50000,
+  "n_holdout": 5032,
+  "epocas": 20,
+  "vocab_size": 52,
+  "max_len": 160,
+  "parametros": 8480308,
+  "historial": [
+    {
+      "epoca": 1,
+      "perdida": 2.32142046337225,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 2,
+      "perdida": 1.5674271735609795,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 3,
+      "perdida": 1.3473078182765417,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 4,
+      "perdida": 1.2430090989385332,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 5,
+      "perdida": 1.1795596687161192,
+      "holdout_exact_match_greedy": 0.054,
+      "holdout_validez": 0.639
+    },
+    {
+      "epoca": 6,
+      "perdida": 1.1384708777982362,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 7,
+      "perdida": 1.1057541698825604,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 8,
+      "perdida": 1.0821758265397987,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 9,
+      "perdida": 1.0630807177144654,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 10,
+      "perdida": 1.0464722915571563,
+      "holdout_exact_match_greedy": 0.16,
+      "holdout_validez": 0.7805
+    },
+    {
+      "epoca": 11,
+      "perdida": 1.0337919191438325,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 12,
+      "perdida": 1.0225238514189818,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 13,
+      "perdida": 1.0128196325837349,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 14,
+      "perdida": 1.0058078133330053,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 15,
+      "perdida": 0.9997318636397926,
+      "holdout_exact_match_greedy": 0.213,
+      "holdout_validez": 0.8305
+    },
+    {
+      "epoca": 16,
+      "perdida": 0.9937222499628456,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 17,
+      "perdida": 0.99074579866565,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 18,
+      "perdida": 0.9888678901657766,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 19,
+      "perdida": 0.9880870425579499,
+      "holdout_exact_match_greedy": null,
+      "holdout_validez": null
+    },
+    {
+      "epoca": 20,
+      "perdida": 0.9868956591401782,
+      "holdout_exact_match_greedy": 0.232,
+      "holdout_validez": 0.833
+    }
+  ],
+  "holdout_final": {
+    "n_eval": 2000,
+    "greedy_exact_match": 0.232,
+    "greedy_validez": 0.833,
+    "beam_exact_match": 0.0,
+    "beam_validez": 0.8235,
+    "beam_tanimoto_top1": 0.6937952685500025
+  }
+}

@@ -165,3 +165,18 @@ Reproducido desde los archivos en esta sesión, con logs en
 
 Fechas de la competencia: entrada y fusión de equipos 7 dic 2026;
 envío final 14 dic 2026 (11:59 PM UTC). Selección final: 0/2.
+
+## 8. Piloto B: generación huella → SMILES (experimental)
+
+Se agregó el decodificador Transformer del piloto B en `codigo/piloto_b/`,
+junto con el notebook Colab y las métricas agregadas en `validacion/piloto_b/`.
+No sustituye RGB: su MRR@25 de 0.3372 se midió en 2,000 GEN-VAL con huellas
+exactas, no con espectros ni con huellas predichas. El exact-match greedy
+del holdout fue 0.232 (puerta propuesta: 0.50), y no se midió MRR de
+moléculas novedosas. Por tanto, **no está listo para envío** y las cifras no
+son comparables directamente con el MRR RGB ni con el resultado público.
+
+La revisión y los pasos pendientes están en
+[`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).
+El paquete de datos, el modelo entrenado y las predicciones por molécula
+siguen fuera del repositorio.
