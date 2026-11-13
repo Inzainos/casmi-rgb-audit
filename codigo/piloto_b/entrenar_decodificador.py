@@ -705,13 +705,14 @@ def predecir(args, ruta_datos, ruta_salida):
         log(f"huellas RGB lineal_bin alineadas: {len(huellas_rgb):,}")
     ruta_salida.mkdir(parents=True, exist_ok=True)
     n_sin_huella, n_sin_mapa = 0, 0
+    log(f"lote de inferencia: {args.batch_predecir} moléculas")
     with open(ruta_salida / "predicciones.csv", "w", encoding="utf-8",
               newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["molecule_id", "smiles"])
-        for ini in range(0, len(ids), 32):
-            lote_ids = ids[ini:ini + 32]
-            lote_iks = iks[ini:ini + 32]
+        for ini in range(0, len(ids), args.batch_predecir):
+            lote_ids = ids[ini:ini + args.batch_predecir]
+            lote_iks = iks[ini:ini + args.batch_predecir]
             filas, huellas = [], []
             for mid, ik in zip(lote_ids, lote_iks):
                 if huellas_rgb is not None:
@@ -794,12 +795,16 @@ def main():
     ap.add_argument("--predicciones-rgb", default="",
                     help="NPZ con molecule_id y scores RGB por molécula "
                          "(n x 2048); aplica clip [0,1] + top-100")
+    ap.add_argument("--batch-predecir", type=int, default=2,
+                    help="moléculas por lote de generación (reducir si falta GPU)")
     ap.add_argument("--muestra", type=int, default=0,
                     help="0 = todas; N>0 = submuestra aleatoria de N "
                          "moléculas (semilla 42)")
     ap.add_argument("--huella", choices=["exacta", "corrupta"],
                     default="exacta")
     args = ap.parse_args()
+    if args.batch_predecir < 1:
+        ap.error("--batch-predecir debe ser al menos 1")
     if args.predicciones_rgb and args.huella != "exacta":
         ap.error("--predicciones-rgb no se combina con --huella corrupta")
     ruta_datos = Path(args.datos)

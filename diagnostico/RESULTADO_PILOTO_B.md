@@ -52,6 +52,8 @@ decodificar. La predicción RGB debe guardarse como NPZ con arrays
 `molecule_id` (IDs directos) y `predicciones` (matriz `n × 2048`). El nuevo
 parámetro `--predicciones-rgb` rechaza IDs duplicados/faltantes y evita
 silenciosamente asociar una huella a otra molécula.
+La inferencia procesa dos moléculas por lote por defecto (`--batch-predecir`);
+en una GPU de 4 GB se requiere un lote de 1 para evitar agotamiento de memoria.
 
 Para empaquetar las salidas existentes de la validación RGB en el entorno
 que contiene sus artefactos:
