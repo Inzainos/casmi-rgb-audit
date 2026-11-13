@@ -1,0 +1,38 @@
+{
+  "n": 2000,
+  "mrr25": 0.0005,
+  "top1": 0.0005,
+  "top5": 0.0005,
+  "recall25": 0.0005,
+  "rank_mediana_presentes": 1.0,
+  "mrr25_ic95_bootstrap": [
+    0.0,
+    0.0015
+  ],
+  "bootstrap_n": 2000,
+  "semilla": 42,
+  "filas_evaluadas": 2000,
+  "filas_sin_verdad": 0,
+  "filas_con_menos_de_25": 0,
+  "validez_media": 0.58208,
+  "unicidad_media": 0.9941820274513554,
+  "novedad_media": null,
+  "novedad_n": 0,
+  "fallos_candidatos": {
+    "total_candidatos": 50000,
+    "ok": 29104,
+    "duplicados": 194,
+    "vacios": 924,
+    "fallo_parseo": 19972
+  },
+  "tanimoto": {
+    "n": 1963,
+    "top1_media": 0.15411829984741537,
+    "top1_mediana": 0.15476190476190477,
+    "top1_frac_ge_0.675": 0.006113092205807438,
+    "mejor25_media": 0.27612871041412906,
+    "mejor25_mediana": 0.25,
+    "mejor25_frac_ge_0.675": 0.018339276617422313,
+    "umbral_cercano": 0.675
+  }
+}

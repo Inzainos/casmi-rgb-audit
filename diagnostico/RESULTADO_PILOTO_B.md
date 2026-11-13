@@ -13,11 +13,14 @@ propuso. No se debe presentar como modelo listo para Kaggle.
 |---|---:|---|
 | RGB bin | MRR@25 local 0.4951; público 0.049 | Retrieval desde espectro; el pool no contiene la mayoría de las moléculas novedosas |
 | Piloto B | MRR@25 0.3372 (IC95% 0.3190–0.3551) | 2,000 GEN-VAL con huellas exactas como entrada; solo mide huella→SMILES |
+| RGB→piloto B | MRR@25 0.0005 (IC95% 0–0.0015) | 2,000 GEN-VAL, huellas RGB predichas y posterior decodificación |
 
 Estas cifras **no son comparables directamente**: el piloto B no recibe
-espectros ni huellas predichas. Además, su MRR de novedad no se midió
-(`novedad_media: null`), por lo que tampoco se puede verificar el umbral
-de go-ahead `MRR_novel > 0.01`.
+espectros ni huellas predichas en su medición original. La evaluación RGB→B
+sí mide la cadena integrada con el mismo muestreo de 2,000 consultas, pero
+solo en GEN-VAL; tampoco mide el desempeño en moléculas ocultas novedosas.
+El MRR de novedad no se midió (`novedad_media: null`), por lo que no se
+puede verificar el umbral de go-ahead `MRR_novel > 0.01`.
 
 ## Puertas del piloto
 
@@ -27,6 +30,13 @@ de go-ahead `MRR_novel > 0.01`.
 - GEN-VAL con huella exacta: MRR@25 **0.3372**, top-1 Tanimoto **0.6373**,
   validez media **0.7467** y unicidad media **0.9679**. Son medidas del
   decodificador aislado, no del pipeline de envío.
+- RGB→SMILES en el mismo muestreo GEN-VAL (2,000, semilla 42): MRR@25
+  **0.0005** (IC95% bootstrap **0–0.0015**), recall@25 **0.0005** y
+  Tanimoto top-1 medio **0.1541**. Solo **1 de 2,000** consultas tuvo su
+  verdad entre las 25 predicciones. Validez media **0.5821** y unicidad
+  media **0.9942**. La caída frente a huellas exactas muestra que esta
+  combinación actual de huella RGB y decodificador recupera muy pocas
+  verdades en esta validación; no es evidencia de rendimiento en test oculto.
 - La auditoría no encontró solapamiento directo train/GEN-VAL ni train/spec,
   pero sí 152 y 81 solapamientos, respectivamente, después de canonicalizar
   tautómeros. El baseline empírico de memorizar train fue MRR@25 **0.0019**.
@@ -35,12 +45,12 @@ de go-ahead `MRR_novel > 0.01`.
 
 ## Qué falta para considerarlo para envío
 
-1. Entrenar la etapa 1 espectro→huella y evaluar la integración completa con
-   la etapa 2 huella→SMILES en un split que no incluya la verdad en el pool.
+1. Evaluar en un holdout de moléculas novedosas, sin incluir la verdad en el
+   pool ni en el entrenamiento del decodificador.
 2. Medir `MRR_novel` contra el train real y confirmar el scoring con la misma
    canonicalización de la competencia.
-3. Repetir la evaluación de forma independiente y comparar el resultado
-   público antes de cambiar el envío actual.
+3. Investigar y mejorar la calidad de las huellas RGB predichas antes de
+   considerar sustituir el envío actual.
 
 ## Adaptación del decodificador a las salidas RGB
 
@@ -93,12 +103,13 @@ El evaluador ahora acepta ese train mediante `--train-ik14` (claves
 tautomerizadas) y reporta `mrr25_novel`, calculado solo en consultas cuya
 verdad no aparece en las moléculas usadas para entrenar el decodificador.
 
-**Prueba de integración pendiente:** los dos ZIP recibidos no contienen
-`W_lineal_rgb20k.npy`, los espectros bineados, las predicciones
-`P_val_rgb20k.npy`/IDs ni el checkpoint del decodificador versionado. Por
-tanto se probaron la binarización y el alineamiento con datos sintéticos,
-pero no se pudo calcular aquí un nuevo MRR RGB→SMILES. Para cerrar esa
-medición se necesitan esos artefactos del entorno de entrenamiento.
+**Prueba de integración completada:** se recuperaron del entorno de
+entrenamiento las predicciones RGB de GEN-VAL, se alinearon por `molecule_id`
+y se generaron 25 SMILES por consulta con el checkpoint del piloto B. La
+evaluación se hizo sobre 2,000 consultas, semilla 42, el mismo muestreo que
+la evaluación de huellas exactas. El resultado completo está en
+[`validacion/piloto_b/evaluacion_genval_rgb.json`](../validacion/piloto_b/evaluacion_genval_rgb.json).
+La corrida no pasó `--train-ik14`, por lo que no calcula `MRR_novel`.
 
 ## Archivos versionados
 

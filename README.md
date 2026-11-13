@@ -173,8 +173,13 @@ junto con el notebook Colab y las métricas agregadas en `validacion/piloto_b/`.
 No sustituye RGB: su MRR@25 de 0.3372 se midió en 2,000 GEN-VAL con huellas
 exactas, no con espectros ni con huellas predichas. El exact-match greedy
 del holdout fue 0.232 (puerta propuesta: 0.50), y no se midió MRR de
-moléculas novedosas. Por tanto, **no está listo para envío** y las cifras no
-son comparables directamente con el MRR RGB ni con el resultado público.
+moléculas novedosas. Se ejecutó además la integración RGB→SMILES en 2,000
+consultas GEN-VAL (mismo muestreo que la prueba con huellas exactas): MRR@25
+**0.0005** (IC95% 0–0.0015), con solo 1 verdad recuperada en top-25 y
+Tanimoto top-1 medio 0.1541. Esto evidencia que la combinación actual no
+recupera las verdades en esta validación, pero no mide moléculas ocultas
+novedosas. Por tanto, **no está listo para envío** ni reemplaza el resultado
+RGB.
 
 La revisión y los pasos pendientes están en
 [`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).
