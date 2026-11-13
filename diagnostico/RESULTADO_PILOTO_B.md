@@ -42,6 +42,59 @@ de go-ahead `MRR_novel > 0.01`.
 3. Repetir la evaluación de forma independiente y comparar el resultado
    público antes de cambiar el envío actual.
 
+## Adaptación del decodificador a las salidas RGB
+
+Sí es posible conectar las métricas: RGB produce 2,048 scores por molécula
+y la entrada del decodificador es una huella Morgan binaria de 2,048 bits.
+La adaptación usa exactamente la transformación RGB `lineal_bin` ya
+evaluada —recorte a `[0,1]` y activación de los 100 scores mayores— antes de
+decodificar. La predicción RGB debe guardarse como NPZ con arrays
+`molecule_id` (IDs directos) y `predicciones` (matriz `n × 2048`). El nuevo
+parámetro `--predicciones-rgb` rechaza IDs duplicados/faltantes y evita
+silenciosamente asociar una huella a otra molécula.
+
+Para empaquetar las salidas existentes de la validación RGB en el entorno
+que contiene sus artefactos:
+
+```python
+import numpy as np
+
+inter = "/ruta/al/proyecto/intermedios"
+verif = "/ruta/al/proyecto/verificacion"
+scores = np.load(f"{inter}/P_val_rgb20k.npy")
+codes = np.load(f"{inter}/P_val_mol_rgb20k.npy")
+ids = np.load(f"{verif}/mol_index.npy", allow_pickle=True)[codes].astype(str)
+np.savez_compressed(
+    f"{inter}/P_val_rgb20k_ids.npz",
+    molecule_id=ids,
+    predicciones=scores,
+)
+```
+
+Después, con el checkpoint del piloto y el paquete de datos actualizados:
+
+```sh
+python codigo/piloto_b/entrenar_decodificador.py --modo predecir \
+  --datos /ruta/al/paquete/datos \
+  --salida /ruta/a/salida_rgb_piloto \
+  --checkpoint /ruta/al/modelo.pt \
+  --lista /ruta/al/paquete/datos/verificacion/piloto_b/gen_val_verdad.parquet \
+  --predicciones-rgb /ruta/al/proyecto/intermedios/P_val_rgb20k_ids.npz \
+  --device auto
+```
+
+Las predicciones SMILES resultantes se puntúan con `30_evaluar_generativo.py`
+y la verdad del mismo split. Esto produce MRR@25, validez, unicidad y
+Tanimoto de la cadena completa RGB→SMILES; no debe compararse con el
+`MRR_novel` hasta pasarle también el conjunto train correcto al evaluador.
+
+**Prueba de integración pendiente:** los dos ZIP recibidos no contienen
+`W_lineal_rgb20k.npy`, los espectros bineados, las predicciones
+`P_val_rgb20k.npy`/IDs ni el checkpoint del decodificador versionado. Por
+tanto se probaron la binarización y el alineamiento con datos sintéticos,
+pero no se pudo calcular aquí un nuevo MRR RGB→SMILES. Para cerrar esa
+medición se necesitan esos artefactos del entorno de entrenamiento.
+
 ## Archivos versionados
 
 - `codigo/piloto_b/`: entrenamiento, evaluación y notebook Colab limpiado.

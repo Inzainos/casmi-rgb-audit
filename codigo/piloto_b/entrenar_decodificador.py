@@ -241,6 +241,43 @@ def vector_denso(bits, nbits=NBITS):
     return v
 
 
+def binarizar_predicciones_rgb(predicciones, top_k=100):
+    """Convierte scores RGB a huellas binarias con la regla lineal_bin."""
+    p = np.asarray(predicciones, dtype=np.float32)
+    if p.ndim != 2 or p.shape[1] != NBITS:
+        raise ValueError(f"predicciones debe tener forma (n, {NBITS}); recibido {p.shape}")
+    if not 1 <= top_k <= NBITS:
+        raise ValueError(f"top_k debe estar entre 1 y {NBITS}")
+    if not np.isfinite(p).all():
+        raise ValueError("predicciones RGB contiene NaN o infinito")
+    activas = []
+    for fila in p:
+        fila = np.clip(fila, 0.0, 1.0)
+        kth = top_k if top_k < NBITS else top_k - 1
+        idx = np.argpartition(-fila, kth)[:top_k]
+        activas.append(np.sort(idx.astype(np.int32)))
+    return activas
+
+
+def mapear_huellas_por_molecule_id(molecule_ids, huellas, ids_objetivo):
+    """Alinea huellas con consultas y falla explícitamente ante IDs ambiguos."""
+    ids = [str(x) for x in molecule_ids]
+    if len(ids) != len(huellas):
+        raise ValueError("número de molecule_id y huellas no coincide")
+    indice = {}
+    for i, mid in enumerate(ids):
+        if mid in indice:
+            raise ValueError(f"molecule_id duplicado en predicciones RGB: {mid}")
+        indice[mid] = i
+    faltantes = sorted({str(mid) for mid in ids_objetivo} - indice.keys())
+    if faltantes:
+        muestra = ", ".join(faltantes[:5])
+        raise ValueError(
+            f"faltan {len(faltantes)} molecule_id en predicciones RGB: {muestra}"
+        )
+    return {str(mid): huellas[indice[str(mid)]] for mid in ids_objetivo}
+
+
 # ---------------------------------------------------------------------------
 # Modelo (requiere torch; import perezoso para poder probar las piezas
 # sin torch en esta caja)
@@ -654,6 +691,18 @@ def predecir(args, ruta_datos, ruta_salida):
         iks = [iks[i] for i in sel]
         log(f"muestra aleatoria (semilla {args.semilla}): {len(ids):,} "
             f"moléculas de {len(tabla):,}")
+    huellas_rgb = None
+    if args.predicciones_rgb:
+        with np.load(args.predicciones_rgb, allow_pickle=False) as datos_rgb:
+            if "molecule_id" not in datos_rgb or "predicciones" not in datos_rgb:
+                raise ValueError(
+                    "el NPZ RGB debe contener 'molecule_id' y 'predicciones'"
+                )
+            huellas_rgb = binarizar_predicciones_rgb(datos_rgb["predicciones"])
+            huellas_rgb = mapear_huellas_por_molecule_id(
+                datos_rgb["molecule_id"], huellas_rgb, ids
+            )
+        log(f"huellas RGB lineal_bin alineadas: {len(huellas_rgb):,}")
     ruta_salida.mkdir(parents=True, exist_ok=True)
     n_sin_huella, n_sin_mapa = 0, 0
     with open(ruta_salida / "predicciones.csv", "w", encoding="utf-8",
@@ -665,6 +714,10 @@ def predecir(args, ruta_datos, ruta_salida):
             lote_iks = iks[ini:ini + 32]
             filas, huellas = [], []
             for mid, ik in zip(lote_ids, lote_iks):
+                if huellas_rgb is not None:
+                    filas.append(mid)
+                    huellas.append(vector_denso(huellas_rgb[str(mid)]))
+                    continue
                 # Búsqueda por molecule_id (clave DIRECTA): la columna
                 # inchikey14 de la lista es la TAUTOMERIZADA (R-EVAL-6) y
                 # el índice del pool es por clave directa. Buscar por
@@ -700,7 +753,8 @@ def predecir(args, ruta_datos, ruta_salida):
         "n_sin_huella": n_sin_huella,
         "n_sin_mapa": n_sin_mapa,
         "beam": args.beam,
-        "huella": args.huella,
+        "huella": "rgb_lineal_bin_top100" if huellas_rgb is not None else args.huella,
+        "predicciones_rgb": args.predicciones_rgb or None,
     }, indent=2))
     log("FIN — predecir")
 
@@ -737,12 +791,17 @@ def main():
     ap.add_argument("--device", default="auto")
     ap.add_argument("--checkpoint", default="")
     ap.add_argument("--lista", default="")
+    ap.add_argument("--predicciones-rgb", default="",
+                    help="NPZ con molecule_id y scores RGB por molécula "
+                         "(n x 2048); aplica clip [0,1] + top-100")
     ap.add_argument("--muestra", type=int, default=0,
                     help="0 = todas; N>0 = submuestra aleatoria de N "
                          "moléculas (semilla 42)")
     ap.add_argument("--huella", choices=["exacta", "corrupta"],
                     default="exacta")
     args = ap.parse_args()
+    if args.predicciones_rgb and args.huella != "exacta":
+        ap.error("--predicciones-rgb no se combina con --huella corrupta")
     ruta_datos = Path(args.datos)
     ruta_salida = Path(args.salida)
     log(f"piloto B decodificador huella->SMILES | modo {args.modo} | "

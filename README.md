@@ -178,5 +178,9 @@ son comparables directamente con el MRR RGB ni con el resultado público.
 
 La revisión y los pasos pendientes están en
 [`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).
+Se añadió una ruta de evaluación RGB→SMILES con `--predicciones-rgb`, que
+aplica la misma binarización `lineal_bin` (top-100) y alinea por
+`molecule_id`; requiere las predicciones RGB de validación que no están en
+este repositorio.
 El paquete de datos, el modelo entrenado y las predicciones por molécula
 siguen fuera del repositorio.
