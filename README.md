@@ -172,14 +172,20 @@ Se agregó el decodificador Transformer del piloto B en `codigo/piloto_b/`,
 junto con el notebook Colab y las métricas agregadas en `validacion/piloto_b/`.
 No sustituye RGB: su MRR@25 de 0.3372 se midió en 2,000 GEN-VAL con huellas
 exactas, no con espectros ni con huellas predichas. El exact-match greedy
-del holdout fue 0.232 (puerta propuesta: 0.50), y no se midió MRR de
-moléculas novedosas. Se ejecutó además la integración RGB→SMILES en 2,000
-consultas GEN-VAL (mismo muestreo que la prueba con huellas exactas): MRR@25
-**0.0005** (IC95% 0–0.0015), con solo 1 verdad recuperada en top-25 y
-Tanimoto top-1 medio 0.1541. Esto evidencia que la combinación actual no
-recupera las verdades en esta validación, pero no mide moléculas ocultas
-novedosas. Por tanto, **no está listo para envío** ni reemplaza el resultado
-RGB.
+del holdout fue 0.232 (puerta propuesta: 0.50). Se ejecutó además la
+integración RGB→SMILES en 2,000 consultas GEN-VAL (mismo muestreo que la
+prueba con huellas exactas): MRR@25 **0.0005** (IC95% 0–0.0015), con solo
+1 verdad recuperada en top-25 y Tanimoto top-1 medio 0.1541.
+
+La novedad se midió contra el conjunto exacto de 50,000 moléculas usado por
+el checkpoint probado (el plan contempla escalar a 252,077). MRR@25 novel
+es **0.000500** por identidad directa (n=2,000) y **0.000502** con
+canonicalización tautomerizada del scorer (n=1,994; 6 consultas excluidas
+por solapamiento). Ambas cifras están bajo el umbral propuesto de 0.01.
+Aunque el 99.71% de los candidatos válidos distintos no está en el train del
+decodificador, eso no implica cercanía a la verdad: el Tanimoto top-1 sigue
+en 0.1541. El resultado solo corresponde a GEN-VAL, no a moléculas ocultas
+novedosas. Por tanto, B **no está listo para envío** ni reemplaza RGB.
 
 La revisión y los pasos pendientes están en
 [`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).

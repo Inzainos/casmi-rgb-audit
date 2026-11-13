@@ -16,14 +16,59 @@
   "filas_con_menos_de_25": 0,
   "validez_media": 0.58208,
   "unicidad_media": 0.9941820274513554,
-  "novedad_media": null,
-  "novedad_n": 0,
+  "novedad_media": 0.9971224892079267,
+  "novedad_n": 1963,
   "fallos_candidatos": {
     "total_candidatos": 50000,
     "ok": 29104,
     "duplicados": 194,
     "vacios": 924,
     "fallo_parseo": 19972
+  },
+  "mrr25_novel_tautomer": {
+    "n": 1994,
+    "mrr25": 0.0005015045135406219,
+    "top1": 0.0005015045135406219,
+    "top5": 0.0005015045135406219,
+    "recall25": 0.0005015045135406219,
+    "rank_mediana_presentes": 1.0,
+    "ic95_bootstrap": [
+      0.0,
+      0.0015045135406218655
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 6,
+    "n_verdades_sin_clave": 0
+  },
+  "mrr25_novel": {
+    "n": 1994,
+    "mrr25": 0.0005015045135406219,
+    "top1": 0.0005015045135406219,
+    "top5": 0.0005015045135406219,
+    "recall25": 0.0005015045135406219,
+    "rank_mediana_presentes": 1.0,
+    "ic95_bootstrap": [
+      0.0,
+      0.0015045135406218655
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 6,
+    "n_verdades_sin_clave": 0
+  },
+  "mrr25_novel_direct": {
+    "n": 2000,
+    "mrr25": 0.0005,
+    "top1": 0.0005,
+    "top5": 0.0005,
+    "recall25": 0.0005,
+    "rank_mediana_presentes": 1.0,
+    "ic95_bootstrap": [
+      0.0,
+      0.0015
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 0,
+    "n_verdades_sin_clave": 0
   },
   "tanimoto": {
     "n": 1963,

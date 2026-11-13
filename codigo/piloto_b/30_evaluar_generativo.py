@@ -99,9 +99,35 @@ def canonical_ik14(smiles, chem, tautomer_enumerator):
     return key.split("-")[0], ""
 
 
+def direct_ik14(smiles, chem):
+    """SMILES -> InChIKey14 without the scorer's tautomer canonicalization."""
+    try:
+        mol = chem.MolFromSmiles(smiles)
+    except Exception as exc:  # noqa: BLE001
+        return "", f"parseo: {type(exc).__name__}"
+    if mol is None:
+        return "", "parseo: MolFromSmiles devolvió None"
+    try:
+        key = chem.MolToInchiKey(mol)
+    except Exception as exc:  # noqa: BLE001
+        return "", f"inchikey: {type(exc).__name__}"
+    if not key:
+        return "", "inchikey: cadena vacía"
+    return key.split("-")[0], ""
+
+
 def mrr_from_ranks(ranks):
     """Idéntico a casmi_lib.mrr_from_ranks (misma fórmula)."""
     r = np.asarray(ranks, dtype=np.float64)
+    if not len(r):
+        return {
+            "n": 0,
+            "mrr25": None,
+            "top1": None,
+            "top5": None,
+            "recall25": None,
+            "rank_mediana_presentes": None,
+        }
     rr = np.where(r > 0, 1.0 / np.where(r > 0, r, 1.0), 0.0)
     return {
         "n": int(len(r)),
@@ -110,6 +136,28 @@ def mrr_from_ranks(ranks):
         "top5": float(((r >= 1) & (r <= 5)).mean()),
         "recall25": float((r > 0).mean()),
         "rank_mediana_presentes": float(np.median(r[r > 0])) if (r > 0).any() else None,
+    }
+
+
+def resumir_novedad(ranks, n_en_train, n_sin_clave, semilla, n_bootstrap):
+    metricas = mrr_from_ranks(ranks)
+    rr = np.where(
+        np.asarray(ranks) > 0,
+        1.0 / np.where(np.asarray(ranks) > 0, np.asarray(ranks), 1.0),
+        0.0,
+    )
+    if len(rr) and n_bootstrap > 0:
+        rng = np.random.default_rng(semilla)
+        boots = rng.choice(rr, size=(n_bootstrap, len(rr)), replace=True).mean(axis=1)
+        ic = [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))]
+    else:
+        ic = [None, None]
+    return {
+        **metricas,
+        "ic95_bootstrap": ic,
+        "bootstrap_n": int(n_bootstrap),
+        "n_verdades_en_train": int(n_en_train),
+        "n_verdades_sin_clave": int(n_sin_clave),
     }
 
 
@@ -157,15 +205,18 @@ def procesar_lista(candidatos, verdad_ik14, chem, tautomer_enumerator, stats):
 
 
 def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
-            semilla=SEMILLA, n_bootstrap=2000):
+            train_direct_ik14=None, semilla=SEMILLA, n_bootstrap=2000):
     """pred_rows: lista de dicts {molecule_id, smiles}.
     verdad: dict molecule_id -> {inchikey14, smiles|None}.
+    train_ik14 contiene claves canonicalizadas por el enumerador de
+    tautómeros; train_direct_ik14 contiene claves InChIKey14 directas.
     """
     from rdkit.Chem import rdFingerprintGenerator
     gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
     stats = {"total_candidatos": 0, "ok": 0, "duplicados": 0, "vacios": 0}
     ranks = []
-    ranks_novel = []
+    ranks_novel_tautomer = []
+    ranks_novel_direct = []
     filas_menos_25 = 0
     validez_por_fila = []
     unicidad_por_fila = []
@@ -173,8 +224,10 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
     tanimoto_top1 = []
     tanimoto_mejor25 = []
     n_sin_verdad = 0
-    n_verdades_en_train = 0
+    n_verdades_en_train_tautomer = 0
     n_verdades_sin_canonicalizar = 0
+    n_verdades_en_train_direct = 0
+    n_verdades_sin_clave_directa = 0
     for row in pred_rows:
         mid = row["molecule_id"]
         if mid not in verdad:
@@ -187,21 +240,37 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
         rango, procesada, smiles_validos, n_validos, n_distintos = procesar_lista(
             cands, v["inchikey14"], chem, tautomer_enumerator, stats)
         ranks.append(rango)
+        ik_tautomer, fallo_tautomer = ("", "sin SMILES")
+        rank_tautomer = 0
+        if v.get("smiles"):
+            ik_tautomer, fallo_tautomer = canonical_ik14(
+                v["smiles"], chem, tautomer_enumerator)
+            if not fallo_tautomer:
+                rank_tautomer = next(
+                    (i + 1 for i, ik in enumerate(procesada)
+                     if ik == ik_tautomer), 0
+                )
         if train_ik14 is not None:
             if v.get("smiles"):
-                ik_verdad, fallo = canonical_ik14(
-                    v["smiles"], chem, tautomer_enumerator)
-                if fallo:
+                if fallo_tautomer:
                     n_verdades_sin_canonicalizar += 1
-                elif ik_verdad in train_ik14:
-                    n_verdades_en_train += 1
+                elif ik_tautomer in train_ik14:
+                    n_verdades_en_train_tautomer += 1
                 else:
-                    ranks_novel.append(next(
-                        (i + 1 for i, ik in enumerate(procesada)
-                         if ik == ik_verdad), 0
-                    ))
+                    ranks_novel_tautomer.append(rank_tautomer)
             else:
                 n_verdades_sin_canonicalizar += 1
+        if train_direct_ik14 is not None:
+            if v.get("smiles"):
+                ik_directa, fallo = direct_ik14(v["smiles"], chem)
+                if fallo:
+                    n_verdades_sin_clave_directa += 1
+                elif ik_directa in train_direct_ik14:
+                    n_verdades_en_train_direct += 1
+                else:
+                    ranks_novel_direct.append(rank_tautomer)
+            else:
+                n_verdades_sin_clave_directa += 1
         validez_por_fila.append(n_validos / max(len(cands), 1))
         unicidad_por_fila.append(n_distintos / max(n_validos, 1) if n_validos else 1.0)
         if train_ik14 is not None and n_distintos:
@@ -251,29 +320,22 @@ def evaluar(pred_rows, verdad, chem, tautomer_enumerator, train_ik14=None,
         "fallos_candidatos": stats,
     })
     if train_ik14 is not None:
-        met_novel = mrr_from_ranks(ranks_novel)
-        rn = np.asarray(ranks_novel, dtype=np.float64)
-        rr_novel = np.where(
-            rn > 0, 1.0 / np.where(rn > 0, rn, 1.0), 0.0
+        out["mrr25_novel_tautomer"] = resumir_novedad(
+            ranks_novel_tautomer,
+            n_verdades_en_train_tautomer,
+            n_verdades_sin_canonicalizar,
+            semilla + 1,
+            n_bootstrap,
         )
-        if len(rr_novel) and n_bootstrap > 0:
-            rng_novel = np.random.default_rng(semilla + 1)
-            boots_novel = rng_novel.choice(
-                rr_novel, size=(n_bootstrap, len(rr_novel)), replace=True
-            ).mean(axis=1)
-            ic_novel = [
-                float(np.percentile(boots_novel, 2.5)),
-                float(np.percentile(boots_novel, 97.5)),
-            ]
-        else:
-            ic_novel = [None, None]
-        out["mrr25_novel"] = {
-            **met_novel,
-            "ic95_bootstrap": ic_novel,
-            "bootstrap_n": int(n_bootstrap),
-            "n_verdades_en_train": n_verdades_en_train,
-            "n_verdades_sin_canonicalizar": n_verdades_sin_canonicalizar,
-        }
+        out["mrr25_novel"] = out["mrr25_novel_tautomer"]
+    if train_direct_ik14 is not None:
+        out["mrr25_novel_direct"] = resumir_novedad(
+            ranks_novel_direct,
+            n_verdades_en_train_direct,
+            n_verdades_sin_clave_directa,
+            semilla + 2,
+            n_bootstrap,
+        )
     if tanimoto_top1:
         t1 = np.asarray(tanimoto_top1)
         bm = np.asarray(tanimoto_mejor25)
@@ -399,7 +461,10 @@ def main():
     ap.add_argument("--predicciones", default="")
     ap.add_argument("--verdad", default="")
     ap.add_argument("--train-ik14", default="",
-                    help="archivo de InChIKey14 tautomerizados del train")
+                    help="InChIKey14 del train canonicalizados por tautómero")
+    ap.add_argument("--train-direct-ik14", default="",
+                    help=("InChIKey14 directos del train, antes del enumerador "
+                          "de tautómeros"))
     ap.add_argument("--datos", type=Path, default=None,
                     help="raíz del paquete de datos; requerido para --autotest")
     ap.add_argument("--salida", default="")
@@ -426,8 +491,19 @@ def main():
     if args.train_ik14:
         train_ik14 = {l.strip() for l in Path(args.train_ik14).read_text().splitlines() if l.strip()}
         log(f"train-ik14 para novedad: {len(train_ik14):,} ({args.train_ik14})")
+    train_direct_ik14 = None
+    if args.train_direct_ik14:
+        train_direct_ik14 = {
+            l.strip() for l in Path(args.train_direct_ik14).read_text().splitlines()
+            if l.strip()
+        }
+        log(
+            f"train-direct-ik14 para novedad: {len(train_direct_ik14):,} "
+            f"({args.train_direct_ik14})"
+        )
     res = evaluar(pred, verdad, chem, te, train_ik14=train_ik14,
-                  semilla=args.semilla, n_bootstrap=args.bootstrap)
+                  train_direct_ik14=train_direct_ik14, semilla=args.semilla,
+                  n_bootstrap=args.bootstrap)
     Path(args.salida).write_text(json.dumps(res, indent=2))
     log(f"RESULTADO: {json.dumps(res, indent=2)}")
     log(f"escrito {args.salida}")

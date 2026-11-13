@@ -13,14 +13,14 @@ propuso. No se debe presentar como modelo listo para Kaggle.
 |---|---:|---|
 | RGB bin | MRR@25 local 0.4951; público 0.049 | Retrieval desde espectro; el pool no contiene la mayoría de las moléculas novedosas |
 | Piloto B | MRR@25 0.3372 (IC95% 0.3190–0.3551) | 2,000 GEN-VAL con huellas exactas como entrada; solo mide huella→SMILES |
-| RGB→piloto B | MRR@25 0.0005 (IC95% 0–0.0015) | 2,000 GEN-VAL, huellas RGB predichas y posterior decodificación |
+| RGB→piloto B | MRR@25 0.0005; `MRR_novel` 0.00050–0.000502 | 2,000 GEN-VAL, huellas RGB predichas y checkpoint B de 50k |
 
 Estas cifras **no son comparables directamente**: el piloto B no recibe
-espectros ni huellas predichas en su medición original. La evaluación RGB→B
-sí mide la cadena integrada con el mismo muestreo de 2,000 consultas, pero
-solo en GEN-VAL; tampoco mide el desempeño en moléculas ocultas novedosas.
-El MRR de novedad no se midió (`novedad_media: null`), por lo que no se
-puede verificar el umbral de go-ahead `MRR_novel > 0.01`.
+espectros ni huellas predichas en su medición original. La prueba RGB→B sí
+mide la cadena integrada en el mismo muestreo de 2,000 consultas, pero solo
+en GEN-VAL; no demuestra desempeño en moléculas ocultas. La novedad se
+calculó contra el conjunto exacto de 50,000 moléculas usado por el checkpoint
+evaluado, no contra el plan de entrenamiento completo de 252,077.
 
 ## Puertas del piloto
 
@@ -37,6 +37,17 @@ puede verificar el umbral de go-ahead `MRR_novel > 0.01`.
   media **0.9942**. La caída frente a huellas exactas muestra que esta
   combinación actual de huella RGB y decodificador recupera muy pocas
   verdades en esta validación; no es evidencia de rendimiento en test oculto.
+- Novedad sobre ese mismo resultado RGB→SMILES: con identidad directa no hay
+  consultas vistas por el checkpoint (n=2,000; MRR@25 **0.000500**, IC95%
+  **0–0.001500**). Con la canonicalización tautomerizada del scorer, 6
+  consultas se consideran vistas y se excluyen (n=1,994; MRR@25 **0.000502**,
+  IC95% **0–0.001505**). Ambas medidas están muy por debajo del umbral de
+  go-ahead **0.01**. El checkpoint contiene 50,000 entradas; sus claves
+  directas son 50,000 y las tautomerizadas únicas son 49,940.
+- El **99.71%** de los candidatos válidos distintos no aparece en el train
+  canonicalizado por tautómero del checkpoint, en promedio por consulta.
+  Esa novedad de candidatos no implica que se parezcan a la molécula
+  correcta: el Tanimoto top-1 medio sigue en **0.1541**.
 - La auditoría no encontró solapamiento directo train/GEN-VAL ni train/spec,
   pero sí 152 y 81 solapamientos, respectivamente, después de canonicalizar
   tautómeros. El baseline empírico de memorizar train fue MRR@25 **0.0019**.
@@ -47,10 +58,31 @@ puede verificar el umbral de go-ahead `MRR_novel > 0.01`.
 
 1. Evaluar en un holdout de moléculas novedosas, sin incluir la verdad en el
    pool ni en el entrenamiento del decodificador.
-2. Medir `MRR_novel` contra el train real y confirmar el scoring con la misma
-   canonicalización de la competencia.
+2. Entrenar y evaluar el modelo completo previsto (252,077 moléculas); los
+   números actuales corresponden al piloto de 50k.
 3. Investigar y mejorar la calidad de las huellas RGB predichas antes de
    considerar sustituir el envío actual.
+
+## Opciones para refinar la integración
+
+- La corrupción de entradas **ya está implementada** en B: 50% de ejemplos
+  recibe bits aleatorios para aproximar Tanimoto 0.31. Por eso, el siguiente
+  paso no es añadir la misma corrupción, sino ajustar su distribución a los
+  errores reales de RGB mediante predicciones out-of-fold y sus SMILES
+  verdaderos. Esto requiere separar moléculas para evitar fuga.
+- El binarizador usa top-100, aunque las huellas verdaderas de esta muestra
+  tienen una media de 45.5 bits activos. En las mismas 2,000 consultas,
+  top-40 elevó el Tanimoto entre la huella RGB y la verdad de **0.251 a
+  0.329**. Sin embargo, un smoke test del decodificador en 64 consultas dio
+  MRR **0.0000** con top-40 frente a **0.0011** con top-100; subió la validez
+  (0.594→0.721) y el mejor Tanimoto de 25 (0.294→0.313). La muestra es
+  demasiado pequeña y los indicadores se contradicen: top-40 es candidato
+  para una búsqueda controlada, no un cambio validado.
+- La evaluación corresponde al checkpoint piloto de **50,000** moléculas.
+  El plan contempla hasta 252,077; en el paquete actual, los filtros del
+  script dejan 251,598 elegibles antes de seleccionar el piloto. Entrenar
+  con el conjunto completo es otro experimento, no una explicación probada
+  del resultado bajo.
 
 ## Adaptación del decodificador a las salidas RGB
 
@@ -100,8 +132,13 @@ y la verdad del mismo split. Esto produce MRR@25, validez, unicidad y
 Tanimoto de la cadena completa RGB→SMILES; no debe compararse con el
 `MRR_novel` hasta pasarle también el conjunto train correcto al evaluador.
 El evaluador ahora acepta ese train mediante `--train-ik14` (claves
-tautomerizadas) y reporta `mrr25_novel`, calculado solo en consultas cuya
-verdad no aparece en las moléculas usadas para entrenar el decodificador.
+tautomerizadas) y `--train-direct-ik14` (claves directas). Reporta en paralelo
+`mrr25_novel_tautomer` y `mrr25_novel_direct`: ambos mantienen el mismo
+ranking de scoring, pero filtran las consultas con definiciones distintas de
+solapamiento. `mrr25_novel` se conserva como alias compatible de la medida
+tautomerizada. Para esta evaluación se reconstruyeron de forma determinista
+las claves del subconjunto de 50k del checkpoint (semilla 42); no se
+versionaron las listas de claves por molécula.
 
 **Prueba de integración completada:** se recuperaron del entorno de
 entrenamiento las predicciones RGB de GEN-VAL, se alinearon por `molecule_id`
@@ -109,7 +146,8 @@ y se generaron 25 SMILES por consulta con el checkpoint del piloto B. La
 evaluación se hizo sobre 2,000 consultas, semilla 42, el mismo muestreo que
 la evaluación de huellas exactas. El resultado completo está en
 [`validacion/piloto_b/evaluacion_genval_rgb.json`](../validacion/piloto_b/evaluacion_genval_rgb.json).
-La corrida no pasó `--train-ik14`, por lo que no calcula `MRR_novel`.
+Se pasaron ambos conjuntos de claves de train para calcular las dos
+definiciones de `MRR_novel`.
 
 ## Archivos versionados
 
