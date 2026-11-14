@@ -207,3 +207,11 @@ este repositorio. El entrenamiento acepta además `--predicciones-oof` para
 mezclar errores RGB reales durante el fine-tune desde `--checkpoint-inicial`.
 El paquete de datos, el modelo entrenado y las predicciones por molécula
 siguen fuera del repositorio.
+
+Se incluye una ruta de envío separada en
+`codigo/casmi_runtime_notebook_b_rgb.ipynb`, construida por
+`codigo/piloto_b/build_notebook_b_rgb.py`. Genera `submission.csv` usando el
+test de Kaggle, los pesos RGB existentes y el checkpoint fine-tuned OOF
+adjunto como input. Es experimental y no reemplaza
+`codigo/casmi_runtime_notebook_rgb.ipynb`; el checkpoint no se distribuye en
+este repositorio.
