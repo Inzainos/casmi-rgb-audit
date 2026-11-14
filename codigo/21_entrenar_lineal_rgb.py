@@ -71,10 +71,59 @@ def agregar_por_mol(P, mol_codes):
     Pm = A @ P
     return np.asarray(Pm, dtype=np.float32), uniq.astype(np.int32), counts.astype(np.int32)
 
+def predecir_oof(holdout_codes, holdout_ids, W, bins_sel, ruta_salida,
+                 batch_spectra=8192):
+    """Predice el fold excluido usando todos sus espectros y promedia por molécula."""
+    Q = sparse.load_npz(INTER / "val_lib.npz").tocsr()
+    meta = np.load(INTER / "val_lib_meta.npz", allow_pickle=True)
+    mol_codes = meta["mol"].astype(np.int32)
+    rows = np.flatnonzero(np.isin(mol_codes, holdout_codes))
+    if not len(rows):
+        raise ValueError("el fold OOF no tiene espectros en val_lib")
+
+    max_code = max(int(mol_codes.max()), int(holdout_codes.max()))
+    pos_por_codigo = np.full(max_code + 1, -1, dtype=np.int32)
+    pos_por_codigo[holdout_codes] = np.arange(len(holdout_codes), dtype=np.int32)
+    destinos = pos_por_codigo[mol_codes[rows]]
+    if (destinos < 0).any():
+        raise ValueError("val_lib incluye códigos fuera del fold OOF")
+
+    sumas = np.zeros((len(holdout_codes), W.shape[1]), dtype=np.float32)
+    cuentas = np.zeros(len(holdout_codes), dtype=np.int32)
+    log(f"predicción OOF: {len(rows):,} espectros para "
+        f"{len(holdout_codes):,} moléculas")
+    for ini in range(0, len(rows), batch_spectra):
+        fin = min(ini + batch_spectra, len(rows))
+        Qb = Q[rows[ini:fin]]
+        Xb = transformar_rgb(Qb, bins_sel)
+        Pb = np.asarray(Xb @ W, dtype=np.float32)
+        destinos_b = destinos[ini:fin]
+        np.add.at(sumas, destinos_b, Pb)
+        np.add.at(cuentas, destinos_b, 1)
+        if (ini // batch_spectra + 1) % 16 == 0 or fin == len(rows):
+            log(f"predicción OOF: {fin:,}/{len(rows):,} espectros")
+    if (cuentas == 0).any():
+        raise ValueError(f"{int((cuentas == 0).sum())} moléculas OOF sin espectros")
+    sumas /= cuentas[:, None]
+
+    ruta_salida = Path(ruta_salida)
+    ruta_salida.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        ruta_salida,
+        molecule_id=np.asarray(holdout_ids, dtype=str),
+        predicciones=sumas,
+    )
+    log(f"predicciones OOF guardadas: {ruta_salida} {sumas.shape}")
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tag", default="rgb20k")
     ap.add_argument("--subset", type=int, default=0, help="0 = todas las filas")
+    ap.add_argument("--holdout-ids", default="",
+                    help="archivo con molecule_id a excluir y predecir OOF")
+    ap.add_argument("--holdout-output", default="",
+                    help="NPZ de salida con scores OOF por molecule_id")
+    ap.add_argument("--batch-spectra-oof", type=int, default=8192)
     ap.add_argument("--epochs", type=int, default=6)
     ap.add_argument("--batch", type=int, default=1024)
     ap.add_argument("--lr", type=float, default=0.5)
@@ -83,6 +132,13 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
+    if bool(args.holdout_ids) != bool(args.holdout_output):
+        ap.error("--holdout-ids y --holdout-output deben usarse juntos")
+    if args.holdout_ids and args.subset:
+        ap.error("--subset no se combina con el fold OOF")
+    if args.batch_spectra_oof < 1:
+        ap.error("--batch-spectra-oof debe ser al menos 1")
+
     log(f"entrenar RGB {args.tag}: epochs={args.epochs} batch={args.batch} "
         f"lr={args.lr} lam={args.lam} mom={args.momentum} seed={args.seed}")
     log(f"entorno: python {sys.version.split()[0]}, numpy {np.__version__}")
@@ -90,13 +146,41 @@ def main():
     X = sparse.load_npz(INTER / "X_train_rgb.npz").tocsr()
     Y = sparse.load_npz(INTER / "y_train_paso2.npz").tocsr()
     n_all = X.shape[0]
-    n = args.subset if (args.subset and args.subset < n_all) else n_all
-    if n < n_all:
+    holdout_codes = holdout_ids = None
+    if args.holdout_ids:
+        ids = [
+            line.strip()
+            for line in Path(args.holdout_ids).read_text().splitlines()
+            if line.strip()
+        ]
+        if len(set(ids)) != len(ids):
+            ap.error("--holdout-ids contiene molecule_id duplicados")
+        train_mol = np.load(INTER / "train_mol_paso2.npy").astype(np.int32)
+        mol_index = np.load(VERIF / "mol_index.npy", allow_pickle=True).astype(str)
+        if len(train_mol) != n_all or Y.shape[0] != n_all:
+            raise ValueError("X, Y y train_mol_paso2 no tienen filas alineadas")
+        if (train_mol < 0).any() or (train_mol >= len(mol_index)).any():
+            raise ValueError("train_mol_paso2 contiene códigos fuera de mol_index")
+        train_ids = mol_index[train_mol]
+        if len(set(train_ids)) != len(train_ids):
+            raise ValueError("train_mol_paso2 repite molecule_id")
+        holdout_mask = np.isin(train_ids, ids)
+        missing = set(ids) - set(train_ids[holdout_mask])
+        if missing:
+            ap.error(f"{len(missing)} holdout molecule_id no aparecen en X_train")
+        holdout_codes = train_mol[holdout_mask]
+        holdout_ids = train_ids[holdout_mask]
+        X = X[~holdout_mask].tocsr()
+        Y = Y[~holdout_mask].tocsr()
+        log(f"fold OOF: excluidas {len(holdout_ids):,} moléculas; "
+            f"entrenamiento {X.shape[0]:,}")
+    n = args.subset if (args.subset and args.subset < X.shape[0]) else X.shape[0]
+    if n < X.shape[0]:
         X, Y = X[:n].tocsr(), Y[:n].tocsr()
     K = X.shape[1]
     log(f"entrenar: n={n:,}, K={K:,} (3 canales), salidas={NBITS}")
     assert K % 3 == 0, "K debe ser múltiplo de 3 (3 canales)"
-    assert Y.shape[0] == n_all, "Y no tiene las filas de 05"
+    assert Y.shape[0] == n, "Y no quedó alineada con X tras filtrar el fold"
 
     # --- SGD con momento, actualización in-place (como 14) ---
     rng = np.random.default_rng(args.seed)
@@ -145,12 +229,23 @@ def main():
 
     config = {"tag": args.tag, "canales": ["sqrt", "log", "bin"],
               "subset": int(n), "n_train_total": int(n_all),
+              "n_holdout_oof": int(len(holdout_ids)) if holdout_ids is not None else 0,
               "epochs": args.epochs, "batch": args.batch, "lr": args.lr,
               "lam": args.lam, "momentum": args.momentum, "seed": args.seed,
               "mse_por_epoca": perdidas,
               "sin_momento_sin_V_tmp": bool(args.momentum == 0.0),
               "python": sys.version.split()[0], "numpy": np.__version__}
     (VERIF / f"entrenar_lineal_{args.tag}.json").write_text(json.dumps(config, indent=2))
+
+    if holdout_codes is not None:
+        del X, Y
+        bins_sel = np.load(INTER / "bins_rgb.npy")
+        predecir_oof(
+            holdout_codes, holdout_ids, W, bins_sel, args.holdout_output,
+            batch_spectra=args.batch_spectra_oof,
+        )
+        log(f"FIN entrenamiento OOF {args.tag}")
+        return
 
     # --- predicción val mol-split (misma transformación RGB) ---
     bins_sel = np.load(INTER / "bins_rgb.npy")

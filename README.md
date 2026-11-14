@@ -187,11 +187,23 @@ decodificador, eso no implica cercanía a la verdad: el Tanimoto top-1 sigue
 en 0.1541. El resultado solo corresponde a GEN-VAL, no a moléculas ocultas
 novedosas. Por tanto, B **no está listo para envío** ni reemplaza RGB.
 
+Se hizo un primer fine-tune con huellas RGB out-of-fold: el modelo RGB se
+entrenó sin las 50,000 moléculas de B, y para el ajuste se mezcló 50% de
+huellas OOF con las huellas exactas y corrupción sintética existentes. En la
+misma muestra GEN-VAL (n=2,000), `MRR_novel` tautomerizado subió a **0.001504**
+(recall@25 0.007523; 15 verdades en top-25), validez a **0.9080** y
+Tanimoto top-1 a **0.2168**. El delta de MRR pareado fue +0.001002, pero su
+IC95% bootstrap incluye cero (−0.000174–0.002085); es una mejora puntual
+prometedora, no concluyente, y aún queda lejos del umbral 0.01.
+Los detalles y límites están en
+[`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).
+
 La revisión y los pasos pendientes están en
 [`diagnostico/RESULTADO_PILOTO_B.md`](diagnostico/RESULTADO_PILOTO_B.md).
 Se añadió una ruta de evaluación RGB→SMILES con `--predicciones-rgb`, que
 aplica la misma binarización `lineal_bin` (top-100) y alinea por
 `molecule_id`; requiere las predicciones RGB de validación que no están en
-este repositorio.
+este repositorio. El entrenamiento acepta además `--predicciones-oof` para
+mezclar errores RGB reales durante el fine-tune desde `--checkpoint-inicial`.
 El paquete de datos, el modelo entrenado y las predicciones por molécula
 siguen fuera del repositorio.

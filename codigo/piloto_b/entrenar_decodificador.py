@@ -394,11 +394,58 @@ def entrenar(args, ruta_datos, ruta_salida):
     bits_train = [bits_de_molecula(csr, i) for i in idx_train]
     bits_hold = [bits_de_molecula(csr, i) for i in idx_hold]
     smiles_hold = [mapa[mol_ik14[i]] for i in idx_hold]
+    oof_bits_train = None
+    if args.predicciones_oof:
+        with np.load(args.predicciones_oof, allow_pickle=False) as datos_oof:
+            if "molecule_id" not in datos_oof or "predicciones" not in datos_oof:
+                raise ValueError(
+                    "el NPZ OOF debe contener 'molecule_id' y 'predicciones'"
+                )
+            huellas_oof = binarizar_predicciones_rgb(
+                datos_oof["predicciones"], top_k=args.rgb_top_k
+            )
+            mapa_oof = mapear_huellas_por_molecule_id(
+                datos_oof["molecule_id"], huellas_oof,
+                [mol_ik14[i] for i in idx_train],
+            )
+        oof_bits_train = [
+            mapa_oof[str(mol_ik14[i])] for i in idx_train
+        ]
+        log(f"huellas RGB OOF alineadas con train: {len(oof_bits_train):,}; "
+            f"top-{args.rgb_top_k}")
 
     modelo = construir_modelo(len(vocab), d_model=args.d_model,
                               nhead=args.nhead, num_capas=args.capas,
                               dim_ff=args.dim_ff, dropout=args.dropout,
                               k_memoria=args.k_memoria, max_len=max_len)
+    if args.checkpoint_inicial:
+        inicial = torch.load(
+            args.checkpoint_inicial, map_location="cpu", weights_only=False
+        )
+        cfg = inicial["config"]
+        configuracion_actual = {
+            "d_model": args.d_model,
+            "nhead": args.nhead,
+            "num_capas": args.capas,
+            "dim_ff": args.dim_ff,
+            "dropout": args.dropout,
+            "k_memoria": args.k_memoria,
+            "max_len": max_len,
+        }
+        diferencias = {
+            clave: (cfg.get(clave), valor)
+            for clave, valor in configuracion_actual.items()
+            if cfg.get(clave) != valor
+        }
+        if diferencias:
+            raise ValueError(
+                f"checkpoint inicial incompatible con la configuración: "
+                f"{diferencias}"
+            )
+        if inicial["vocab"] != vocab:
+            raise ValueError("el vocabulario difiere del checkpoint inicial")
+        modelo.load_state_dict(inicial["state_dict"])
+        log(f"pesos iniciales cargados: {args.checkpoint_inicial}")
     modelo.to(dispositivo)
     n_param = sum(p.numel() for p in modelo.parameters())
     log(f"modelo: Transformer {args.capas} capas, d_model {args.d_model}, "
@@ -425,11 +472,17 @@ def entrenar(args, ruta_datos, ruta_salida):
         for ini in range(0, len(idx_train), args.batch):
             lote_idx = perm[ini:ini + args.batch]
             # Huellas (densas) + corrupción.
-            huellas = np.stack([
-                vector_denso(
-                    corromper_huella(bits_train[j], args.t_corrupt, rng)
-                    if rng.random() < args.p_corrupt else bits_train[j])
-                for j in lote_idx])
+            huellas = []
+            for j in lote_idx:
+                if (oof_bits_train is not None
+                        and rng.random() < args.p_rgb_real):
+                    bits = oof_bits_train[j]
+                elif rng.random() < args.p_corrupt:
+                    bits = corromper_huella(bits_train[j], args.t_corrupt, rng)
+                else:
+                    bits = bits_train[j]
+                huellas.append(vector_denso(bits))
+            huellas = np.stack(huellas)
             # SMILES objetivo (teacher forcing).
             seqs = [tok.codificar(smiles_train[j], max_len) for j in lote_idx]
             largo = max(len(s) for s in seqs)
@@ -488,6 +541,9 @@ def entrenar(args, ruta_datos, ruta_salida):
                    "dropout": args.dropout, "k_memoria": args.k_memoria,
                    "max_len": max_len, "n_train": int(len(idx_train)),
                    "epocas": args.epocas, "p_corrupt": args.p_corrupt,
+                   "p_rgb_real": args.p_rgb_real,
+                   "rgb_top_k": args.rgb_top_k if oof_bits_train is not None else None,
+                   "checkpoint_inicial": args.checkpoint_inicial or None,
                    "t_corrupt": args.t_corrupt, "semilla": args.semilla},
         "vocab": vocab,
     }, ruta_salida / "modelo.pt")
@@ -495,6 +551,9 @@ def entrenar(args, ruta_datos, ruta_salida):
         "n_train": int(len(idx_train)),
         "n_holdout": int(len(idx_hold)),
         "epocas": args.epocas,
+        "p_rgb_real": args.p_rgb_real,
+        "rgb_top_k": args.rgb_top_k if oof_bits_train is not None else None,
+        "checkpoint_inicial": args.checkpoint_inicial or None,
         "vocab_size": len(vocab),
         "max_len": max_len,
         "parametros": int(n_param),
@@ -527,8 +586,8 @@ def evaluar_holdout(modelo, tok, bits_hold, smiles_hold, dispositivo, args,
     tanimoto_top1 = []
     modelo.eval()
     with torch.no_grad():
-        for ini in range(0, n, 64):
-            lote = idx[ini:ini + 64]
+        for ini in range(0, n, args.batch_eval):
+            lote = idx[ini:ini + args.batch_eval]
             huellas = np.stack([vector_denso(bits_hold[j]) for j in lote])
             huella_t = torch.tensor(huellas, device=dispositivo)
             if modo == "greedy":
@@ -795,8 +854,18 @@ def main():
     ap.add_argument("--predicciones-rgb", default="",
                     help="NPZ con molecule_id y scores RGB por molécula "
                          "(n x 2048); aplica clip [0,1] + top-100")
+    ap.add_argument("--predicciones-oof", default="",
+                    help="NPZ RGB out-of-fold para entrenamiento supervisado")
+    ap.add_argument("--p-rgb-real", type=float, default=0.0,
+                    help="fracción de ejemplos que usa la huella RGB OOF real")
+    ap.add_argument("--rgb-top-k", type=int, default=100,
+                    help="bits activos para las entradas RGB durante entrenamiento")
+    ap.add_argument("--checkpoint-inicial", default="",
+                    help="inicializa los pesos desde un checkpoint compatible")
     ap.add_argument("--batch-predecir", type=int, default=2,
                     help="moléculas por lote de generación (reducir si falta GPU)")
+    ap.add_argument("--batch-eval", type=int, default=64,
+                    help="moléculas por lote en la evaluación interna")
     ap.add_argument("--muestra", type=int, default=0,
                     help="0 = todas; N>0 = submuestra aleatoria de N "
                          "moléculas (semilla 42)")
@@ -805,6 +874,18 @@ def main():
     args = ap.parse_args()
     if args.batch_predecir < 1:
         ap.error("--batch-predecir debe ser al menos 1")
+    if args.batch_eval < 1:
+        ap.error("--batch-eval debe ser al menos 1")
+    if not 0.0 <= args.p_rgb_real <= 1.0:
+        ap.error("--p-rgb-real debe estar entre 0 y 1")
+    if args.p_rgb_real and not args.predicciones_oof:
+        ap.error("--p-rgb-real requiere --predicciones-oof")
+    if args.predicciones_oof and not 1 <= args.rgb_top_k <= NBITS:
+        ap.error("--rgb-top-k debe estar entre 1 y 2048")
+    if args.predicciones_oof and args.modo != "entrenar":
+        ap.error("--predicciones-oof solo se usa con --modo entrenar")
+    if args.checkpoint_inicial and args.modo != "entrenar":
+        ap.error("--checkpoint-inicial solo se usa con --modo entrenar")
     if args.predicciones_rgb and args.huella != "exacta":
         ap.error("--predicciones-rgb no se combina con --huella corrupta")
     ruta_datos = Path(args.datos)

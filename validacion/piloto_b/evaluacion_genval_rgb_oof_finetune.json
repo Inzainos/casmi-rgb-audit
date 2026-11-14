@@ -1,0 +1,99 @@
+{
+  "n": 2000,
+  "mrr25": 0.001499473443223443,
+  "top1": 0.0,
+  "top5": 0.0035,
+  "recall25": 0.0075,
+  "rank_mediana_presentes": 6.0,
+  "mrr25_ic95_bootstrap": [
+    0.0006986979166666666,
+    0.002522019803113552
+  ],
+  "bootstrap_n": 2000,
+  "semilla": 42,
+  "comparacion_pareada_baseline": {
+    "politica_novedad": "tautomerizada",
+    "n": 1994,
+    "mrr25_baseline": 0.0005015045135406219,
+    "mrr25_oof_finetune": 0.0015039853994217082,
+    "delta_mrr25": 0.0010024808858810864,
+    "delta_ic95_bootstrap": [
+      -0.0001736310120838707,
+      0.002084918905066848
+    ],
+    "bootstrap_n": 2000,
+    "semilla": 42,
+    "mejor_mrr": 14,
+    "igual_mrr": 1979,
+    "peor_mrr": 1
+  },
+  "filas_evaluadas": 2000,
+  "filas_sin_verdad": 0,
+  "filas_con_menos_de_25": 0,
+  "validez_media": 0.908,
+  "unicidad_media": 0.9877534635964423,
+  "novedad_media": 0.9911749350706934,
+  "novedad_n": 1997,
+  "fallos_candidatos": {
+    "total_candidatos": 50000,
+    "ok": 45400,
+    "duplicados": 562,
+    "vacios": 305,
+    "fallo_parseo": 4295
+  },
+  "mrr25_novel_tautomer": {
+    "n": 1994,
+    "mrr25": 0.0015039853994217082,
+    "top1": 0.0,
+    "top5": 0.003510531594784353,
+    "recall25": 0.007522567703109328,
+    "rank_mediana_presentes": 6.0,
+    "ic95_bootstrap": [
+      0.0007312430652764154,
+      0.002446588276734964
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 6,
+    "n_verdades_sin_clave": 0
+  },
+  "mrr25_novel": {
+    "n": 1994,
+    "mrr25": 0.0015039853994217082,
+    "top1": 0.0,
+    "top5": 0.003510531594784353,
+    "recall25": 0.007522567703109328,
+    "rank_mediana_presentes": 6.0,
+    "ic95_bootstrap": [
+      0.0007312430652764154,
+      0.002446588276734964
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 6,
+    "n_verdades_sin_clave": 0
+  },
+  "mrr25_novel_direct": {
+    "n": 2000,
+    "mrr25": 0.001499473443223443,
+    "top1": 0.0,
+    "top5": 0.0035,
+    "recall25": 0.0075,
+    "rank_mediana_presentes": 6.0,
+    "ic95_bootstrap": [
+      0.0006666552197802198,
+      0.0024864674908424886
+    ],
+    "bootstrap_n": 2000,
+    "n_verdades_en_train": 0,
+    "n_verdades_sin_clave": 0
+  },
+  "tanimoto": {
+    "n": 1997,
+    "top1_media": 0.21676723995854408,
+    "top1_mediana": 0.2,
+    "top1_frac_ge_0.675": 0.00801201802704056,
+    "mejor25_media": 0.3445951250750337,
+    "mejor25_mediana": 0.30303030303030304,
+    "mejor25_frac_ge_0.675": 0.04957436154231347,
+    "umbral_cercano": 0.675
+  }
+}

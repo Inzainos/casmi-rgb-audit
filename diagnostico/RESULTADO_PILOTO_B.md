@@ -14,6 +14,7 @@ propuso. No se debe presentar como modelo listo para Kaggle.
 | RGB bin | MRR@25 local 0.4951; público 0.049 | Retrieval desde espectro; el pool no contiene la mayoría de las moléculas novedosas |
 | Piloto B | MRR@25 0.3372 (IC95% 0.3190–0.3551) | 2,000 GEN-VAL con huellas exactas como entrada; solo mide huella→SMILES |
 | RGB→piloto B | MRR@25 0.0005; `MRR_novel` 0.00050–0.000502 | 2,000 GEN-VAL, huellas RGB predichas y checkpoint B de 50k |
+| RGB→B ajustado con RGB OOF | `MRR_novel` 0.00150; recall@25 0.0075 | Mismo muestreo de 2,000 GEN-VAL; un fine-tune experimental |
 
 Estas cifras **no son comparables directamente**: el piloto B no recibe
 espectros ni huellas predichas en su medición original. La prueba RGB→B sí
@@ -48,6 +49,20 @@ evaluado, no contra el plan de entrenamiento completo de 252,077.
   canonicalizado por tautómero del checkpoint, en promedio por consulta.
   Esa novedad de candidatos no implica que se parezcan a la molécula
   correcta: el Tanimoto top-1 medio sigue en **0.1541**.
+- Primer fine-tune con errores RGB reales out-of-fold (OOF): se entrenó el
+  modelo RGB excluyendo las 50,000 moléculas de B y se generó una huella por
+  molécula promediando sus 437,068 espectros. El Tanimoto medio de las
+  huellas top-100 OOF contra las Morgan reales fue **0.2594**. B se ajustó
+  por una época desde el checkpoint original, mezclando 50% de entradas RGB
+  OOF, 25% exactas y 25% de la corrupción sintética original. En el mismo
+  muestreo, `MRR_novel` tautomerizado subió de **0.000502 a 0.001504**,
+  recall@25 de **0.000502 a 0.007523**, validez de **0.5821 a 0.9080** y
+  Tanimoto top-1 de **0.1541 a 0.2168**. Hubo 15 verdades en top-25 (7 en
+  top-5), pero ninguna en top-1; la unicidad bajó de 0.9942 a 0.9878.
+  Bootstrap pareado sobre las mismas 1,994 consultas novedosas: delta MRR
+  **+0.001002**, IC95% **−0.000174–0.002085** (incluye cero; mejora
+  prometedora, aún no concluyente). El resultado sigue 6.6× por debajo de
+  la puerta 0.01 y solo mide GEN-VAL; no justifica sustituir RGB ni enviarlo.
 - La auditoría no encontró solapamiento directo train/GEN-VAL ni train/spec,
   pero sí 152 y 81 solapamientos, respectivamente, después de canonicalizar
   tautómeros. El baseline empírico de memorizar train fue MRR@25 **0.0019**.
@@ -60,16 +75,19 @@ evaluado, no contra el plan de entrenamiento completo de 252,077.
    pool ni en el entrenamiento del decodificador.
 2. Entrenar y evaluar el modelo completo previsto (252,077 moléculas); los
    números actuales corresponden al piloto de 50k.
-3. Investigar y mejorar la calidad de las huellas RGB predichas antes de
-   considerar sustituir el envío actual.
+3. Repetir el ajuste OOF con más semillas y revisar la mezcla/top-k en un
+   holdout independiente antes de considerar sustituir el envío actual.
 
 ## Opciones para refinar la integración
 
 - La corrupción de entradas **ya está implementada** en B: 50% de ejemplos
-  recibe bits aleatorios para aproximar Tanimoto 0.31. Por eso, el siguiente
-  paso no es añadir la misma corrupción, sino ajustar su distribución a los
-  errores reales de RGB mediante predicciones out-of-fold y sus SMILES
-  verdaderos. Esto requiere separar moléculas para evitar fuga.
+  recibe bits aleatorios para aproximar Tanimoto 0.31. El primer ajuste con
+  errores RGB reales OOF ya se ejecutó manteniendo separación por molécula:
+  el modelo RGB excluyó las 50k moléculas de B, y sus scores se alinearon por
+  `molecule_id`. El decodificador se afinó desde el checkpoint con 50% OOF,
+  dejando intacta la mezcla de huellas exactas y corrupción sintética en el
+  otro 50%. La prueba mejoró métricas puntuales, pero el bootstrap pareado
+  incluye cero; hacen falta más semillas/holdout antes de concluir.
 - El binarizador usa top-100, aunque las huellas verdaderas de esta muestra
   tienen una media de 45.5 bits activos. En las mismas 2,000 consultas,
   top-40 elevó el Tanimoto entre la huella RGB y la verdad de **0.251 a
@@ -96,6 +114,10 @@ parámetro `--predicciones-rgb` rechaza IDs duplicados/faltantes y evita
 silenciosamente asociar una huella a otra molécula.
 La inferencia procesa dos moléculas por lote por defecto (`--batch-predecir`);
 en una GPU de 4 GB se requiere un lote de 1 para evitar agotamiento de memoria.
+Para el ajuste supervisado, `entrenar_decodificador.py` acepta
+`--predicciones-oof`, `--p-rgb-real` y `--checkpoint-inicial`; valida el
+vocabulario y la arquitectura antes de cargar pesos. `--batch-eval` limita
+independientemente el lote de evaluación interna.
 
 Para empaquetar las salidas existentes de la validación RGB en el entorno
 que contiene sus artefactos:
@@ -147,12 +169,15 @@ evaluación se hizo sobre 2,000 consultas, semilla 42, el mismo muestreo que
 la evaluación de huellas exactas. El resultado completo está en
 [`validacion/piloto_b/evaluacion_genval_rgb.json`](../validacion/piloto_b/evaluacion_genval_rgb.json).
 Se pasaron ambos conjuntos de claves de train para calcular las dos
-definiciones de `MRR_novel`.
+definiciones de `MRR_novel`. El fine-tune OOF se evaluó con el mismo muestreo;
+sus métricas agregadas están en
+[`validacion/piloto_b/evaluacion_genval_rgb_oof_finetune.json`](../validacion/piloto_b/evaluacion_genval_rgb_oof_finetune.json).
 
 ## Archivos versionados
 
-- `codigo/piloto_b/`: entrenamiento, evaluación y notebook Colab limpiado.
-- `validacion/piloto_b/`: métricas agregadas recibidas con el piloto.
+- `codigo/piloto_b/`: entrenamiento (incluido el ajuste OOF), evaluación y
+  notebook Colab limpiado.
+- `validacion/piloto_b/`: métricas agregadas del piloto y de la prueba RGB OOF.
 
 No se versionaron el paquete de datos (39 MB), el checkpoint (34 MB) ni las
 predicciones por molécula. El ZIP de datos incluido dentro del segundo ZIP es
