@@ -164,7 +164,7 @@ Reproducido desde los archivos en esta sesión, con logs en
 | `salida/submission_paso2.csv` | `ed758b99cdb3a91ac690f02fc3618779` | Paso 2 kNN; no enviado |
 
 Fechas de la competencia: entrada y fusión de equipos 7 dic 2026;
-envío final 14 dic 2026 (11:59 PM UTC). Selección final: 0/2.
+envío final 14 dic 2026 (11:59 PM UTC). Selección final: 2/2 (generativa v2, público 0.138, + envío 3, público 0.146; decisión de Elán 2026-11-23 21:53).
 
 ## 8. Piloto B: generación huella → SMILES (experimental)
 
@@ -215,3 +215,18 @@ test de Kaggle, los pesos RGB existentes y el checkpoint fine-tuned OOF
 adjunto como input. Es experimental y no reemplaza
 `codigo/casmi_runtime_notebook_rgb.ipynb`; el checkpoint no se distribuye en
 este repositorio.
+
+## 9. Proyecto completo CASMI (noviembre 2026)
+
+El trabajo completo del proyecto — código base, notebooks generativos v1–v4, informes y submissions — vive en este mismo repositorio desde 2026-11-26 (decisión de Elán: subir todo a `casmi-rgb-audit`, no crear un repo nuevo).
+
+- `01_construir.py` … `31_baseline_b2_cercania.py`, `casmi_lib.py`, `paso2_lib.py`, `topo_lib.py` — código del proyecto base (pasos 1–31, libs).
+- `casmi_runtime_notebook.ipynb` — notebook runtime del proyecto base; `verificacion/construir_notebook_runtime.py` lo construye.
+- `verificacion/casmi_notebook_generativo_v1.ipynb`, `v2`, `v2_u06`, `v3_u01`, `v4_u01` + sus constructores — notebooks generativos (v1–v4).
+- `verificacion/REPORTE_RUN_COMPLETO_V4.md` — reporte de la corrida completa v4 (público 0.138; ruta generativa agotada).
+- `verificacion/porton_calibracion.json` — portón de calibración (umbral 0.6, congelado).
+- `kaggle-casmi-informe*.md` — informes por fase (base, paso 2, relleno 25, runtime, Morgan).
+- `AGENTS.md`, `CHANGELOG.md` — reglas operativas e historial verificado del proyecto.
+- `salida/submission*.csv` — submissions del proyecto base (idénticas a las de la auditoría RGB).
+
+Selección final (Elán, 2026-11-23 21:53): generativa v2 (público 0.138) + envío 3 (público 0.146). La ruta generativa está agotada (techo de cobertura: 975/1,000 novelas sin verdad en ninguna lista; el decodificador entrenado en huellas exactas recibe huellas degradadas, MRR 0.0184). Cierre de equipos 7 dic 2026; envío final 14 dic 2026.

@@ -1,0 +1,79 @@
+{
+  "fuente": "etapaA.npz (2,400 mol: 2,000 novel + 400 clase-1) vs huella verdadera (huellas_pool.npz)",
+  "perfiles": {
+    "bin05": {
+      "umbral": 0.5,
+      "bits_fila_media": 18.3,
+      "tanimoto_media": 0.2676,
+      "retencion_media": 0.294,
+      "anadidos_media": 4.9,
+      "frec_bits": {
+        "max": 0.9267,
+        "mediana": 0.0008,
+        "media": 0.0089,
+        "n_bits_frec_0": 427,
+        "top10": [
+          0.9267,
+          0.9125,
+          0.9117,
+          0.8996,
+          0.8792,
+          0.8438,
+          0.8058,
+          0.7833,
+          0.745,
+          0.6658
+        ]
+      },
+      "corr_retencion_bit_vs_frec_bit": 0.679,
+      "n_bits_con_10plus_true": 1735
+    },
+    "bin03": {
+      "umbral": 0.3,
+      "bits_fila_media": 33.1,
+      "tanimoto_media": 0.3075,
+      "retencion_media": 0.397,
+      "anadidos_media": 15.0,
+      "frec_bits": {
+        "max": 0.9558,
+        "mediana": 0.0025,
+        "media": 0.0161,
+        "n_bits_frec_0": 70,
+        "top10": [
+          0.9558,
+          0.9546,
+          0.9413,
+          0.9333,
+          0.9292,
+          0.9212,
+          0.9083,
+          0.8592,
+          0.8592,
+          0.8163
+        ]
+      },
+      "corr_retencion_bit_vs_frec_bit": 0.683,
+      "n_bits_con_10plus_true": 1735
+    }
+  },
+  "parametros_corrupcion_v3": {
+    "bin05": {
+      "r_rango": [
+        0.25,
+        0.35
+      ],
+      "t_objetivo": 0.27,
+      "nota": "r medio 0.30 medido; m se deriva por mol\u00e9cula: m = round(k_keep/T - n)"
+    },
+    "bin03": {
+      "r_rango": [
+        0.35,
+        0.45
+      ],
+      "t_objetivo": 0.31,
+      "nota": "r medio 0.40 medido; m se deriva por mol\u00e9cula: m = round(k_keep/T - n)"
+    },
+    "anadidos": "muestreo sin reemplazo del complemento de la huella verdadera, con probabilidad proporcional a frec_bits_predichos_<perfil>.npy + epsilon 1/2400 (suavizado)",
+    "keep": "dos opciones en corromper_huella_v3: --keep frecuencia (por defecto: cada bit verdadero se conserva con probabilidad p_keep_<perfil>[j], medida; la correlaci\u00f3n retenci\u00f3n~frecuencia por bit es 0.68, el keep uniforme es infiel) o --keep uniforme (r~U(rango), mecanismo del piloto B, control); en ambas, m se deriva por mol\u00e9cula: m = round(k_keep/T - n)"
+  }
+}

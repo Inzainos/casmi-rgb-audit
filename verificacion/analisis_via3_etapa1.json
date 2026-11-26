@@ -1,0 +1,204 @@
+{
+  "kNN_por_subconjunto": {
+    "novel_calibracion": {
+      "n": 1000,
+      "tan_cont_media": 0.308,
+      "tan_cont_mediana": 0.2821,
+      "tan_cont_p90": 0.4714,
+      "frac_tan_cont_ge_0.4": 0.172,
+      "frac_tan_cont_ge_0.5": 0.08,
+      "frac_tan_cont_ge_0.6": 0.044,
+      "frac_tan_cont_ge_0.7": 0.028,
+      "tan_bin05_media": 0.2647,
+      "tan_bin05_mediana": 0.2432,
+      "tan_bin03_media": 0.3059,
+      "bits05_media": 18.0,
+      "bits03_media": 32.7,
+      "retencion05_media": 0.2902,
+      "top1_cos_media": 0.6651,
+      "frac_top1cos_lt_0.6": 0.369
+    },
+    "novel_validacion": {
+      "n": 1000,
+      "tan_cont_media": 0.3156,
+      "tan_cont_mediana": 0.2814,
+      "tan_cont_p90": 0.4909,
+      "frac_tan_cont_ge_0.4": 0.19,
+      "frac_tan_cont_ge_0.5": 0.094,
+      "frac_tan_cont_ge_0.6": 0.057,
+      "frac_tan_cont_ge_0.7": 0.04,
+      "tan_bin05_media": 0.2725,
+      "tan_bin05_mediana": 0.2407,
+      "tan_bin03_media": 0.3107,
+      "bits05_media": 18.7,
+      "bits03_media": 33.4,
+      "retencion05_media": 0.3008,
+      "top1_cos_media": 0.6683,
+      "frac_top1cos_lt_0.6": 0.38
+    },
+    "clase-1_calibracion": {
+      "n": 200,
+      "tan_cont_media": 0.3104,
+      "tan_cont_mediana": 0.2855,
+      "tan_cont_p90": 0.4803,
+      "frac_tan_cont_ge_0.4": 0.17,
+      "frac_tan_cont_ge_0.5": 0.095,
+      "frac_tan_cont_ge_0.6": 0.035,
+      "frac_tan_cont_ge_0.7": 0.02,
+      "tan_bin05_media": 0.2619,
+      "tan_bin05_mediana": 0.2386,
+      "tan_bin03_media": 0.3062,
+      "bits05_media": 18.0,
+      "bits03_media": 33.9,
+      "retencion05_media": 0.2889,
+      "top1_cos_media": 0.9217,
+      "frac_top1cos_lt_0.6": 0.005
+    },
+    "clase-1_validacion": {
+      "n": 200,
+      "tan_cont_media": 0.3077,
+      "tan_cont_mediana": 0.2834,
+      "tan_cont_p90": 0.4394,
+      "frac_tan_cont_ge_0.4": 0.16,
+      "frac_tan_cont_ge_0.5": 0.05,
+      "frac_tan_cont_ge_0.6": 0.02,
+      "frac_tan_cont_ge_0.7": 0.02,
+      "tan_bin05_media": 0.2635,
+      "tan_bin05_mediana": 0.248,
+      "tan_bin03_media": 0.3004,
+      "bits05_media": 17.6,
+      "bits03_media": 32.3,
+      "retencion05_media": 0.2861,
+      "top1_cos_media": 0.9227,
+      "frac_top1cos_lt_0.6": 0.01
+    }
+  },
+  "curva_respuesta_decodificador": {
+    "metodo": "hit = SMILES exacto de verdad_novel.csv en los candidatos de etapaB.csv (beam, checkpoint piloto B original) o de predicciones_hibrido_validacion.csv (fusionado G4); Tanimoto = bin 0.5 a huella propia",
+    "n_novel_validacion": 1000,
+    "n_en_beam_csv": 979,
+    "n_a_generativo": 380,
+    "hits_beam_total": 8,
+    "hits_fus_total": 1,
+    "mrr_beam_solo_generativo_por_rank": NaN,
+    "bins": [
+      {
+        "bin_tan_bin05": [
+          0.0,
+          0.15
+        ],
+        "n": 117,
+        "n_generativo": 89,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.15,
+          0.2
+        ],
+        "n": 152,
+        "n_generativo": 78,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.2,
+          0.25
+        ],
+        "n": 264,
+        "n_generativo": 102,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.25,
+          0.3
+        ],
+        "n": 213,
+        "n_generativo": 61,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.3,
+          0.35
+        ],
+        "n": 101,
+        "n_generativo": 21,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.35,
+          0.4
+        ],
+        "n": 42,
+        "n_generativo": 4,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.4,
+          0.5
+        ],
+        "n": 31,
+        "n_generativo": 3,
+        "hit_beam": 0,
+        "hit_beam_rate": 0.0,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.5,
+          0.6
+        ],
+        "n": 22,
+        "n_generativo": 3,
+        "hit_beam": 1,
+        "hit_beam_rate": 0.0455,
+        "hit_beam_rate_generativo": 0.0,
+        "hit_fus": 0,
+        "hit_fus_rate": 0.0
+      },
+      {
+        "bin_tan_bin05": [
+          0.6,
+          1.01
+        ],
+        "n": 58,
+        "n_generativo": 19,
+        "hit_beam": 7,
+        "hit_beam_rate": 0.1207,
+        "hit_beam_rate_generativo": 0.0526,
+        "hit_fus": 1,
+        "hit_fus_rate": 0.0172
+      }
+    ]
+  }
+}

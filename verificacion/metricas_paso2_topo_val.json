@@ -1,0 +1,35 @@
+{
+  "tag": "topo_val",
+  "n": 13748,
+  "n_con_huella": 13748,
+  "n_sin_huella": 0,
+  "tanimoto_cont_media": 0.10012178868055344,
+  "tanimoto_cont_mediana": 0.09344163537025452,
+  "tanimoto_cont_p25": 0.058471906930208206,
+  "tanimoto_cont_p75": 0.12850148230791092,
+  "tanimoto_bin100_media": 0.0830279290676117,
+  "tanimoto_bin100_mediana": 0.0746268630027771,
+  "nulo_tanimoto_cont_media": 0.2206754982471466,
+  "nulo_tanimoto_cont_mediana": 0.22632117569446564,
+  "nulo_tanimoto_bin100_media": 0.17282788455486298,
+  "retrieval": {
+    "n": 13748,
+    "mrr25": 0.014048657632169045,
+    "top1": 0.00669188245562991,
+    "top5": 0.019930171661332558,
+    "recall25": 0.055062554553389584,
+    "rank_mediana_presentes": 9.0
+  },
+  "oraculo_retrieval": {
+    "n": 13748,
+    "mrr25": 0.9684297064036992,
+    "top1": 0.9612307244690137,
+    "top5": 0.9770875763747454,
+    "recall25": 0.991562409077684,
+    "rank_mediana_presentes": 1.0
+  },
+  "colisiones_media": 1.6419115507710211,
+  "colisiones_mediana": 0.0,
+  "colisiones_frac_cero": 0.9543206284550481,
+  "colisiones_max": 359
+}

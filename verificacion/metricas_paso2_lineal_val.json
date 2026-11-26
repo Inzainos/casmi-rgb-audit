@@ -1,0 +1,35 @@
+{
+  "tag": "lineal_val",
+  "n": 13748,
+  "n_con_huella": 13748,
+  "n_sin_huella": 0,
+  "tanimoto_cont_media": 0.24750058352947235,
+  "tanimoto_cont_mediana": 0.24122481048107147,
+  "tanimoto_cont_p25": 0.1875978372991085,
+  "tanimoto_cont_p75": 0.29817233234643936,
+  "tanimoto_bin100_media": 0.24208073318004608,
+  "tanimoto_bin100_mediana": 0.23275862634181976,
+  "nulo_tanimoto_cont_media": 0.2206754982471466,
+  "nulo_tanimoto_cont_mediana": 0.22632117569446564,
+  "nulo_tanimoto_bin100_media": 0.17282788455486298,
+  "retrieval": {
+    "n": 13748,
+    "mrr25": 0.008514093651633133,
+    "top1": 0.003200465522257783,
+    "top5": 0.01156531859179517,
+    "recall25": 0.0409514111143439,
+    "rank_mediana_presentes": 10.0
+  },
+  "oraculo_retrieval": {
+    "n": 13748,
+    "mrr25": 0.9684297064036992,
+    "top1": 0.9612307244690137,
+    "top5": 0.9770875763747454,
+    "recall25": 0.991562409077684,
+    "rank_mediana_presentes": 1.0
+  },
+  "colisiones_media": 1.6419115507710211,
+  "colisiones_mediana": 0.0,
+  "colisiones_frac_cero": 0.9543206284550481,
+  "colisiones_max": 359
+}
